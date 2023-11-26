@@ -64,5 +64,7 @@ Os procedimentos e funções podem ser chamados para inserir cursos, buscar IDs 
 ---
 
 Este sistema é um exemplo simplificado e pode ser expandido com mais funcionalidades e validações de acordo com as necessidades do usuário.
+
+QUERY DA MANIPULAÇÃO DO DADOS:
 ![image](https://github.com/SamuelJorgetto/Function-Universidade/assets/144075081/86b7f85d-c9a8-4ebc-8708-b73c5ac15768)
 
