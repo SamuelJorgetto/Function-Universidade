@@ -1,0 +1,112 @@
+CREATE TABLE Areas (
+    ID_Area NUMBER PRIMARY KEY,
+    Nome_Area VARCHAR2(100) UNIQUE
+);
+
+CREATE TABLE Cursos (
+    ID_Curso NUMBER PRIMARY KEY,
+    Nome_Curso VARCHAR2(200),
+    ID_Area NUMBER,
+    CONSTRAINT fk_area_curso FOREIGN KEY (ID_Area) REFERENCES Areas(ID_Area)
+);
+
+CREATE TABLE Alunos (
+    ID_Aluno NUMBER PRIMARY KEY,
+    Nome VARCHAR2(100),
+    Sobrenome VARCHAR2(100),
+    Email VARCHAR2(200) UNIQUE
+);
+
+CREATE TABLE Matriculas (
+    ID_Matricula NUMBER PRIMARY KEY,
+    ID_Aluno NUMBER,
+    ID_Curso NUMBER,
+    Data_Matricula DATE DEFAULT SYSDATE,
+    CONSTRAINT fk_aluno_matricula FOREIGN KEY (ID_Aluno) REFERENCES Alunos(ID_Aluno),
+    CONSTRAINT fk_curso_matricula FOREIGN KEY (ID_Curso) REFERENCES Cursos(ID_Curso),
+    CONSTRAINT uq_aluno_curso UNIQUE (ID_Aluno, ID_Curso)
+);
+
+-- Inserção de dados na tabela Areas
+INSERT INTO Areas (ID_Area, Nome_Area) VALUES (1, 'Ciências da Computação');
+INSERT INTO Areas (ID_Area, Nome_Area) VALUES (2, 'Engenharia');
+INSERT INTO Areas (ID_Area, Nome_Area) VALUES (3, 'Administração');
+
+-- Inserção de dados na tabela Cursos
+INSERT INTO Cursos (ID_Curso, Nome_Curso, ID_Area) VALUES (1, 'Bacharelado em Ciência da Computação', 1);
+INSERT INTO Cursos (ID_Curso, Nome_Curso, ID_Area) VALUES (2, 'Engenharia Elétrica', 2);
+INSERT INTO Cursos (ID_Curso, Nome_Curso, ID_Area) VALUES (3, 'Administração de Empresas', 3);
+
+-- Inserção de dados na tabela Alunos
+INSERT INTO Alunos (ID_Aluno, Nome, Sobrenome, Email) VALUES (1, 'João', 'Silva', 'joao.silva@dominio.com');
+INSERT INTO Alunos (ID_Aluno, Nome, Sobrenome, Email) VALUES (2, 'Maria', 'Santos', 'maria.santos@dominio.com');
+INSERT INTO Alunos (ID_Aluno, Nome, Sobrenome, Email) VALUES (3, 'Pedro', 'Ferreira', 'pedro.ferreira@dominio.com');
+
+-- Inserção de dados na tabela Matriculas (exemplo de matrícula de alunos em cursos)
+INSERT INTO Matriculas (ID_Matricula, ID_Aluno, ID_Curso, Data_Matricula) VALUES (1, 1, 1, SYSDATE);
+INSERT INTO Matriculas (ID_Matricula, ID_Aluno, ID_Curso, Data_Matricula) VALUES (2, 2, 2, SYSDATE);
+INSERT INTO Matriculas (ID_Matricula, ID_Aluno, ID_Curso, Data_Matricula) VALUES (3, 3, 3, SYSDATE);
+
+
+
+CREATE OR REPLACE PROCEDURE InserirCurso (
+    p_Nome_Curso IN VARCHAR2,
+    p_ID_Area IN NUMBER
+)
+IS
+BEGIN
+    INSERT INTO Cursos (ID_Curso, Nome_Curso, ID_Area)
+    VALUES (SEQ_CURSOS.NEXTVAL, p_Nome_Curso, p_ID_Area);
+    COMMIT;
+END;
+
+
+CREATE OR REPLACE FUNCTION BuscarIDCurso (
+    p_Nome_Curso IN VARCHAR2,
+    p_Nome_Area IN VARCHAR2
+)
+RETURN NUMBER
+IS
+    v_ID_Curso NUMBER;
+BEGIN
+    SELECT c.ID_Curso INTO v_ID_Curso
+    FROM Cursos c
+    INNER JOIN Areas a ON c.ID_Area = a.ID_Area
+    WHERE c.Nome_Curso = p_Nome_Curso AND a.Nome_Area = p_Nome_Area;
+
+    RETURN v_ID_Curso;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL; -- Ou outra ação para lidar com a não localização do curso
+END;
+
+
+CREATE OR REPLACE PROCEDURE MatricularAluno (
+    p_ID_Aluno IN NUMBER,
+    p_Nome_Curso IN VARCHAR2,
+    p_Nome_Area IN VARCHAR2
+)
+IS
+    v_ID_Curso NUMBER;
+BEGIN
+    v_ID_Curso := BuscarIDCurso(p_Nome_Curso, p_Nome_Area);
+
+    IF v_ID_Curso IS NOT NULL THEN
+        -- Verificar se o aluno já está matriculado no curso
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Matriculas
+            WHERE ID_Aluno = p_ID_Aluno AND ID_Curso = v_ID_Curso
+        ) THEN
+            INSERT INTO Matriculas (ID_Matricula, ID_Aluno, ID_Curso)
+            VALUES (SEQ_MATRICULAS.NEXTVAL, p_ID_Aluno, v_ID_Curso);
+            COMMIT;
+        ELSE
+            -- Ação a ser tomada se o aluno já estiver matriculado
+            DBMS_OUTPUT.PUT_LINE('Aluno já matriculado no curso.');
+        END IF;
+    ELSE
+        -- Ação a ser tomada se o curso não for encontrado
+        DBMS_OUTPUT.PUT_LINE('Curso não encontrado.');
+    END IF;
+END;
